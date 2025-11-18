@@ -1,0 +1,61 @@
+name: Full Stack Todo List CICD (Master Branch)
+
+# Kích hoạt workflow khi có push lên nhánh 'master'
+on:
+  push:
+    branches: [ "master" ]
+  # Cho phép chạy workflow thủ công từ GitHub UI
+  workflow_dispatch:
+
+# Định nghĩa các công việc (jobs) sẽ chạy
+jobs:
+  build_and_push:
+    # Chọn hệ điều hành để chạy job
+    runs-on: ubuntu-latest
+
+    # Các biến môi trường sẽ được sử dụng trong bước build
+    env:
+      # QUAN TRỌNG: Đặt giá trị mặc định cho biến API URL. 
+      # Nếu BE và FE chạy cùng một cổng/tên miền, sử dụng đường dẫn tương đối là tốt nhất.
+      # Ví dụ: /api nếu bạn dùng Nginx/Proxy để chuyển hướng, hoặc tên miền đầy đủ.
+      DEFAULT_API_URL: /
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Docker Buildx
+        # Thiết lập Docker Buildx để build image hiệu quả
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Log in to Docker Hub
+        # Đăng nhập vào Docker Hub bằng secrets đã thiết lập
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏷️ Extract metadata (tags) for Docker
+        # Tự động tạo tên và tags cho image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Thay thế 'todo-list-v2' bằng tên image bạn muốn
+          images: ${{ secrets.DOCKER_USERNAME }}/todo-list-v2 
+          tags: |
+            # 1. Thẻ 'latest' (chỉ gắn thẻ này khi đang ở nhánh master)
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            # 2. Thẻ dựa trên SHA ngắn của commit
+            type=sha,prefix=
+
+      - name: 🏗️ Build and Push Docker image
+        # Xây dựng image và đẩy lên Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Truyền biến môi trường API_URL cho Stage Build Frontend
+          build-args: |
+            REACT_APP_API_URL=${{ env.DEFAULT_API_URL }}

@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000"; // chỉnh theo port backend của bạn
+const API_URL = process.env.REACT_APP_API_URL; // chỉnh theo port backend của bạn
 
 export async function login(username, password) {
     const res = await fetch(`${API_URL}/auth/login`, {
