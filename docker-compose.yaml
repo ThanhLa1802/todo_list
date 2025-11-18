@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  # Tên dịch vụ, có thể giữ nguyên là 'backend' hoặc 'app'
+  app:
+    # 🚨 QUAN TRỌNG: Thay thế <DOCKER_USERNAME> bằng tên Docker Hub của bạn
+    image: lathanh/todo-list-v2:latest 
+    ports:
+      # Ánh xạ cổng 80 của host EB tới cổng 5000 trong container
+      - "80:5000" 
+    # Nếu bạn cần biến môi trường (ví dụ: chuỗi kết nối DB cho production), thêm vào đây:
+    # environment:
+    #   - DB_HOST=...
